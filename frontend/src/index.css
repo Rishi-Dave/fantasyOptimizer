@@ -1,0 +1,38 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+}
+
+.chat-bubble-user {
+  @apply bg-blue-500 text-white rounded-lg px-4 py-2 max-w-xs ml-auto;
+}
+
+.chat-bubble-bot {
+  @apply bg-white text-gray-800 rounded-lg px-4 py-2 max-w-xs mr-auto shadow-md;
+}
+
+.brutal-analysis {
+  @apply bg-red-50 border-l-4 border-red-500 p-4 my-4;
+}
+
+.grade-a { @apply text-green-600 font-bold; }
+.grade-b { @apply text-blue-600 font-bold; }
+.grade-c { @apply text-yellow-600 font-bold; }
+.grade-d { @apply text-red-600 font-bold; }
+.grade-f { @apply text-red-800 font-bold; }
+
+/* Custom fantasy colors */
+.bg-fantasy-500 { background-color: #0ea5e9; }
+.bg-fantasy-600 { background-color: #0284c7; }
+.bg-fantasy-700 { background-color: #0369a1; }
+.text-fantasy-600 { color: #0284c7; }
