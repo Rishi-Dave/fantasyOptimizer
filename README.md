@@ -1,15 +1,27 @@
-# Fantasy Optimize 🏈
+# Fantasy Football AI Multi-Agent System 🏈
 
-A brutally honest AI-powered fantasy football analysis system built with React and FastAPI, integrated with the Sleeper API for real-time league data.
+A sophisticated fantasy football analysis system using multiple AI agents, real-time data integration, and advanced machine learning techniques to provide championship-level insights.
 
-## Features
+## 🎯 Features
 
-- 🤖 **AI-Powered Analysis**: Get intelligent fantasy football advice
-- 🔥 **Brutal Honesty Mode**: Unfiltered, harsh team analysis 
-- 📊 **Real Data Integration**: Uses Sleeper API for actual league data
-- 💬 **Interactive Chat**: Ask questions about your team, trades, start/sit decisions
-- 📈 **Detailed Analytics**: Team grades, brutality scores, and recommendations
-- ⚡ **Quick Actions**: One-click team analysis, waiver wire suggestions, and lineup advice
+### Multi-Agent AI System
+- **Data Collection Agents**: Market intelligence, statistical analysis with real APIs
+- **Analysis Agents**: Matchup evaluation, injury/news processing, trade intelligence  
+- **Decision Agents**: Lineup optimization, waiver wire strategy, championship planning
+- **LLM Integration**: Claude Sonnet 4 + GPT-4o Mini with ReAct prompting
+
+### Real-Time Data Sources
+- **Sleeper API**: Live fantasy data, stats, projections, trending players
+- **FantasyPros**: Expert consensus rankings and start/sit advice
+- **Reddit**: Social sentiment analysis from r/fantasyfootball
+- **Weather API**: Game conditions with fantasy impact scoring
+- **Vegas Odds**: Betting lines and game script predictions
+
+### Advanced Analytics
+- **Vector Database**: Historical pattern recognition with ChromaDB
+- **ReAct Reasoning**: Structured AI reasoning for complex decisions
+- **Performance Monitoring**: Request tracking and agent health metrics
+- **Background Tasks**: Automatic data updates and system maintenance
 
 ## Project Structure
 

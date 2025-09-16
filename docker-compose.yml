@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  fantasy-ai-backend:
+    build: .
+    ports:
+      - "8001:8001"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8001
+      - DATABASE_URL=sqlite:///./database/fantasy_football.db
+      - VECTOR_DB_PATH=./database/vector_store/chroma_db
+      - LOG_LEVEL=INFO
+      - ENABLE_VECTOR_DB=true
+      - ENABLE_BACKGROUND_TASKS=true
+    env_file:
+      - .env
+    volumes:
+      - ./database:/app/database
+      - ./logs:/app/logs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/api/v2/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=http://localhost:8001
+    depends_on:
+      - fantasy-ai-backend
+    restart: unless-stopped
+
+  # Optional: Redis for caching (if needed)
+  # redis:
+  #   image: redis:7-alpine
+  #   ports:
+  #     - "6379:6379"
+  #   restart: unless-stopped
+
+  # Optional: PostgreSQL for production database
+  # postgres:
+  #   image: postgres:15-alpine
+  #   environment:
+  #     POSTGRES_DB: fantasy_football
+  #     POSTGRES_USER: fantasy_user
+  #     POSTGRES_PASSWORD: fantasy_password
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   ports:
+  #     - "5432:5432"
+  #   restart: unless-stopped
+
+# volumes:
+#   postgres_data:

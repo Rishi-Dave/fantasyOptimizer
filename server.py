@@ -98,8 +98,13 @@ def get_player_names(player_ids: List[str]) -> Dict[str, str]:
 def get_llm_response(prompt: str, user_context: str = "") -> str:
     """Get response from LLM with context"""
     try:
-        import openai
-        openai.api_key = os.getenv('OPENAI_API_KEY')
+        from openai import OpenAI
+        
+        openai_key = os.getenv('OPENAI_API_KEY')
+        if not openai_key:
+            raise Exception("No OpenAI API key")
+            
+        client = OpenAI(api_key=openai_key)
         
         full_prompt = f"""
 You are a brutally honest fantasy football analyst. You have access to real fantasy football data and provide actionable advice.
@@ -116,14 +121,15 @@ Provide analysis that is:
 
 Response:"""
         
-        response = openai.ChatCompletion.create(
-            model="gpt-4",
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
             messages=[{"role": "user", "content": full_prompt}],
             max_tokens=500,
             temperature=0.7
         )
         return response.choices[0].message.content
-    except:
+    except Exception as e:
+        print(f"LLM call failed: {e}")
         # Fallback to enhanced mock responses
         return generate_smart_response(prompt, user_context)
 
