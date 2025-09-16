@@ -12,7 +12,11 @@ import asyncio
 
 # Import our real data pipeline
 from backend.data.data_pipeline import data_pipeline
+from backend.data.data_enrichment import data_enrichment
 from backend.scrapers.sleeper_api import SleeperAPI
+from backend.agents.langgraph_workflow import fantasy_workflow
+from backend.data.vector_population import vector_population
+from backend.webhooks.breaking_news import breaking_news_processor, webhook_simulator
 
 # Load environment variables
 load_dotenv()
@@ -313,6 +317,153 @@ async def get_fresh_data():
     fresh_data = await data_pipeline.get_fresh_data()
     return fresh_data
 
+@app.get("/api/enhanced/data-pipeline/enriched-context")
+async def get_enriched_context():
+    """Get enriched context that will be sent to LLM for debugging."""
+    fresh_data = await data_pipeline.get_fresh_data()
+    enriched_data = await data_enrichment.enrich_pipeline_data(fresh_data)
+    return enriched_data
+
+@app.post("/api/enhanced/multi-agent-analysis")
+async def multi_agent_analysis(request: TeamAnalysisRequest):
+    """Advanced multi-agent analysis using LangGraph workflow coordination."""
+    try:
+        # Execute the LangGraph workflow
+        workflow_result = await fantasy_workflow.execute_analysis(
+            user_request=request.question,
+            league_id=request.league_id,
+            username=request.username
+        )
+        
+        if not workflow_result.get("success"):
+            raise HTTPException(status_code=500, detail=workflow_result.get("error", "Workflow failed"))
+        
+        # Format response
+        return {
+            "success": True,
+            "analysis_type": "multi_agent_coordination",
+            "coordinated_analysis": workflow_result["analysis"],
+            "confidence_score": workflow_result["confidence_score"],
+            "action_items": workflow_result["action_items"],
+            "evidence_sources": workflow_result["evidence_sources"],
+            "agents_completed": workflow_result["agents_completed"],
+            "execution_log": workflow_result["execution_log"],
+            "agent_outputs": workflow_result["agent_outputs"],
+            "brutality_mode": request.brutality_mode,
+            "timestamp": workflow_result["timestamp"]
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Multi-agent analysis failed: {str(e)}")
+
+@app.post("/api/enhanced/vector-db/initialize")
+async def initialize_vector_database():
+    """Initialize vector database with historical fantasy patterns."""
+    try:
+        await vector_population.populate_historical_patterns()
+        return {
+            "success": True,
+            "message": "Vector database initialized with historical patterns",
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Vector DB initialization failed: {str(e)}")
+
+@app.get("/api/enhanced/vector-db/search-patterns")
+async def search_patterns(query: str, limit: int = 5):
+    """Search for similar historical patterns."""
+    try:
+        patterns = await vector_population.search_similar_patterns(query, limit)
+        return {
+            "success": True,
+            "query": query,
+            "patterns": patterns,
+            "count": len(patterns),
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Pattern search failed: {str(e)}")
+
+@app.get("/api/enhanced/vector-db/patterns/{category}")
+async def get_patterns_by_category(category: str, limit: int = 10):
+    """Get patterns by category."""
+    try:
+        patterns = await vector_population.get_patterns_by_category(category, limit)
+        return {
+            "success": True,
+            "category": category,
+            "patterns": patterns,
+            "count": len(patterns),
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Category search failed: {str(e)}")
+
+# Breaking News Webhook Endpoints
+@app.post("/api/enhanced/webhooks/breaking-news")
+async def receive_breaking_news(news_item: dict):
+    """Receive breaking news webhook and process fantasy impact."""
+    try:
+        result = await breaking_news_processor.process_breaking_news(news_item)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Breaking news processing failed: {str(e)}")
+
+@app.get("/api/enhanced/breaking-news/recent")
+async def get_recent_breaking_news(hours: int = 24):
+    """Get recent breaking news with fantasy impact analysis."""
+    try:
+        news = await breaking_news_processor.get_recent_news(hours)
+        return {
+            "success": True,
+            "news_count": len(news),
+            "recent_news": news,
+            "timeframe_hours": hours,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Recent news retrieval failed: {str(e)}")
+
+# Webhook Testing Endpoints
+@app.post("/api/enhanced/webhooks/simulate/injury")
+async def simulate_injury(player_name: str, team: str, severity: str):
+    """Simulate injury news for testing."""
+    try:
+        result = await webhook_simulator.simulate_injury_news(player_name, team, severity)
+        return {
+            "simulation": "injury",
+            "result": result,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Injury simulation failed: {str(e)}")
+
+@app.post("/api/enhanced/webhooks/simulate/trade")
+async def simulate_trade(player_name: str, from_team: str, to_team: str):
+    """Simulate trade news for testing."""
+    try:
+        result = await webhook_simulator.simulate_trade_news(player_name, from_team, to_team)
+        return {
+            "simulation": "trade",
+            "result": result,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Trade simulation failed: {str(e)}")
+
+@app.post("/api/enhanced/webhooks/simulate/suspension")
+async def simulate_suspension(player_name: str, team: str, weeks: int):
+    """Simulate suspension news for testing."""
+    try:
+        result = await webhook_simulator.simulate_suspension_news(player_name, team, weeks)
+        return {
+            "simulation": "suspension",
+            "result": result,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Suspension simulation failed: {str(e)}")
+
 @app.post("/api/enhanced/analyze-team")
 async def analyze_team(request: TeamAnalysisRequest) -> AnalysisResult:
     """Enhanced team analysis with real-time data from all sources"""
@@ -336,14 +487,17 @@ async def analyze_team(request: TeamAnalysisRequest) -> AnalysisResult:
             'weather_data', 'vegas_odds', 'nfl_injuries'
         ])
         
-        # Build comprehensive context for LLM
+        # Enrich the raw data with actionable insights
+        enriched_data = await data_enrichment.enrich_pipeline_data(fresh_data)
+        
+        # Build comprehensive context for LLM with enriched data
         context = f"""
-LEAGUE INFO:
+LEAGUE INFORMATION:
 - League: {league_data.get('name', 'Unknown')} ({league_data.get('total_rosters', 'Unknown')} teams)
 - Scoring: {league_data.get('scoring_settings', {}).get('rec', 0)} PPR
 - User: {request.username}
 
-ROSTER DATA:
+CURRENT ROSTER:
 """
         
         if roster_data:
@@ -351,47 +505,52 @@ ROSTER DATA:
             async with SleeperAPI() as sleeper:
                 player_details = await sleeper.get_nfl_players()
             roster_names = [player_details.get(pid, {}).get('full_name', f'Player {pid}') for pid in player_ids if pid in player_details]
-            context += f"Players: {', '.join(roster_names)}\n"
+            context += f"Players: {', '.join(roster_names[:10])}{'...' if len(roster_names) > 10 else ''}\n"
         
-        # Add real-time data context
-        context += "\nREAL-TIME DATA:\n"
+        # Add enriched real-time analysis
+        context += "\n=== REAL-TIME FANTASY INTELLIGENCE ===\n"
         
-        # Add trending players context
-        if fresh_data.get('sleeper_trending', {}).get('data'):
-            trending = fresh_data['sleeper_trending']['data']
-            context += f"Trending Adds: {[p.get('full_name', 'Unknown') for p in trending.get('trending_add', [])[:5]]}\n"
+        # Add actionable insights
+        insights = enriched_data.get('actionable_insights', [])
+        if insights:
+            context += "\n🎯 KEY INSIGHTS THIS WEEK:\n"
+            for insight in insights[:5]:  # Top 5 insights
+                context += f"  • {insight}\n"
         
-        # Add FantasyPros rankings context  
-        if fresh_data.get('fantasypros_rankings', {}).get('data'):
-            rankings = fresh_data['fantasypros_rankings']['data']
-            context += f"Current Week Expert Rankings Available: QB, RB, WR, TE\n"
+        # Add trending analysis
+        trending = enriched_data.get('trending_analysis', {})
+        if trending.get('analysis_summary'):
+            context += f"\n{trending['analysis_summary']}"
         
-        # Add injury context
-        if fresh_data.get('nfl_injuries', {}).get('data'):
-            injuries = fresh_data['nfl_injuries']['data']
-            context += f"Latest Injury Reports: {len(injuries.get('injury_reports', []))} players with status updates\n"
+        # Add weather impact
+        weather = enriched_data.get('weather_impact', {})
+        if weather.get('weather_summary'):
+            context += f"\n{weather['weather_summary']}"
         
-        # Add weather context
-        if fresh_data.get('weather_data', {}).get('data'):
-            weather = fresh_data['weather_data']['data']
-            outdoor_games = len(weather.get('outdoor_weather', {}))
-            context += f"Weather Conditions: {outdoor_games} outdoor games this week\n"
+        # Add Vegas game scripts
+        vegas = enriched_data.get('vegas_insights', {})
+        if vegas.get('betting_summary'):
+            context += f"\n{vegas['betting_summary']}"
         
-        # Add Vegas odds context
-        if fresh_data.get('vegas_odds', {}).get('data'):
-            vegas = fresh_data['vegas_odds']['data']
-            context += f"Vegas Data: Game totals and spreads for game script analysis\n"
+        # Add injury alerts
+        injuries = enriched_data.get('injury_alerts', {})
+        if injuries.get('injury_summary'):
+            context += f"\n{injuries['injury_summary']}"
         
-        # Add Reddit sentiment context
-        if fresh_data.get('reddit_sentiment', {}).get('data'):
-            reddit = fresh_data['reddit_sentiment']['data']
-            hype_count = len(reddit.get('hype_players', []))
-            context += f"Community Sentiment: {hype_count} trending hype players identified\n"
+        # Add expert rankings
+        rankings = enriched_data.get('expert_rankings', {})
+        if rankings.get('rankings_summary'):
+            context += f"\n{rankings['rankings_summary']}"
         
-        context += f"\nDATA FRESHNESS:\n"
-        for source, info in fresh_data.items():
-            age = info.get('age_seconds', 0)
-            context += f"- {source}: {int(age/60)} minutes old\n"
+        # Add community sentiment
+        sentiment = enriched_data.get('sentiment_analysis', {})
+        if sentiment.get('sentiment_summary'):
+            context += f"\n{sentiment['sentiment_summary']}"
+        
+        # Data source status
+        active_sources = enriched_data.get('data_sources_active', {})
+        context += f"\n📊 DATA SOURCES ACTIVE: {', '.join([k.upper() for k, v in active_sources.items() if v])}\n"
+        context += f"⏰ Analysis generated at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
         
         # Get LLM analysis with rich context
         analysis_text = await get_llm_response(request.question, context)
@@ -409,25 +568,55 @@ ROSTER DATA:
             "Review your playoff schedule (weeks 15-17) for tough matchups"
         ]
         
-        # Extract evidence-based recommendations from real data
-        recommendations = [
-            "Check your waiver wire for emerging players in your weak positions",
-            "Consider trading bench depth for starting lineup upgrades", 
-            "Monitor injury reports for handcuff opportunities",
-            "Review your playoff schedule (weeks 15-17) for tough matchups"
-        ]
+        # Generate evidence-based recommendations from enriched data
+        recommendations = []
         
-        # Add data-driven recommendations based on fresh data
-        if fresh_data.get('sleeper_trending', {}).get('data'):
-            trending = fresh_data['sleeper_trending']['data']
-            top_adds = trending.get('trending_add', [])[:3]
-            if top_adds:
-                recommendations.append(f"Consider waiver claims: {', '.join([p.get('full_name', 'Unknown') for p in top_adds])}")
+        # Add waiver wire recommendations from trending data
+        trending = enriched_data.get('trending_analysis', {})
+        if trending.get('top_adds'):
+            top_add = trending['top_adds'][0]
+            recommendations.append(f"🔥 Top Waiver Target: {top_add['name']} ({top_add['position']}) - {top_add['add_percentage']}% add rate")
         
-        if fresh_data.get('nfl_injuries', {}).get('data'):
-            injuries = fresh_data['nfl_injuries']['data']
-            if injuries.get('injury_reports'):
-                recommendations.append("Check practice participation reports before setting lineups")
+        if trending.get('breakout_candidates'):
+            for candidate in trending['breakout_candidates'][:2]:
+                recommendations.append(f"📈 Breakout Alert: {candidate['name']} ({candidate['position']}) - {candidate['reason']}")
+        
+        # Add weather-based recommendations
+        weather = enriched_data.get('weather_impact', {})
+        if weather.get('games_affected'):
+            for affected in weather['games_affected'][:2]:
+                if affected['overall_impact'] in ['negative', 'slightly_negative']:
+                    recommendations.append(f"🌧️ Weather Impact: Avoid {affected['team']} passing game - {affected['conditions']}")
+        
+        # Add Vegas-based recommendations
+        vegas = enriched_data.get('vegas_insights', {})
+        if vegas.get('high_total_games'):
+            game = vegas['high_total_games'][0]
+            recommendations.append(f"📊 High-Scoring Target: {game['matchup']} (O/U {game['total']}) - favor pass-catchers")
+        
+        if vegas.get('blowout_games'):
+            game = vegas['blowout_games'][0] 
+            recommendations.append(f"💨 Blowout Script: {game['matchup']} ({game['spread']} spread) - target lead RB")
+        
+        # Add injury-based recommendations
+        injuries = enriched_data.get('injury_alerts', {})
+        if injuries.get('key_injuries'):
+            rb_injuries = [inj for inj in injuries['key_injuries'] if inj['position'] == 'RB']
+            if rb_injuries:
+                recommendations.append(f"🏥 Handcuff Alert: {len(rb_injuries)} RBs injured - check backup values")
+        
+        # Add general recommendations if we don't have enough data-driven ones
+        while len(recommendations) < 4:
+            general_recs = [
+                "Monitor injury reports for practice participation updates",
+                "Consider trading bench depth for starting lineup upgrades",
+                "Review your playoff schedule (weeks 15-17) for tough matchups",
+                "Check waiver wire for emerging players in your weak positions"
+            ]
+            for rec in general_recs:
+                if rec not in recommendations:
+                    recommendations.append(rec)
+                    break
         
         return AnalysisResult(
             analysis=analysis_text,
@@ -437,13 +626,15 @@ ROSTER DATA:
             confidence_score=0.92,  # Higher confidence with real data
             data_sources={
                 "sleeper_api": bool(roster_data),
-                "fantasypros_rankings": bool(fresh_data.get('fantasypros_rankings', {}).get('data')),
-                "injury_reports": bool(fresh_data.get('nfl_injuries', {}).get('data')),
-                "weather_data": bool(fresh_data.get('weather_data', {}).get('data')),
-                "vegas_odds": bool(fresh_data.get('vegas_odds', {}).get('data')),
-                "reddit_sentiment": bool(fresh_data.get('reddit_sentiment', {}).get('data')),
+                "data_enrichment_service": True,
+                **enriched_data.get('data_sources_active', {}),
                 "llm_analysis": True,
-                "real_time_pipeline": True
+                "real_time_pipeline": True,
+                "actionable_insights": len(enriched_data.get('actionable_insights', [])),
+                "trending_analysis": bool(enriched_data.get('trending_analysis')),
+                "weather_impact": bool(enriched_data.get('weather_impact')),
+                "vegas_insights": bool(enriched_data.get('vegas_insights')),
+                "injury_alerts": bool(enriched_data.get('injury_alerts'))
             },
             execution_summary={
                 "steps_completed": [
@@ -507,4 +698,4 @@ async def chat(request: ChatRequest) -> ChatResponse:
         )
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8001)
+    uvicorn.run(app, host="0.0.0.0", port=8002)
