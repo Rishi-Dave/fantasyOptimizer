@@ -247,9 +247,9 @@ class LLMManager:
     async def _query_claude(self, prompt: str) -> str:
         """Query Claude using Anthropic API."""
         try:
-            message = await self.anthropic_client.messages.create(
+            message = self.anthropic_client.messages.create(
                 model="claude-3-5-sonnet-20241022",
-                max_tokens=1500,
+                max_tokens=2000,
                 temperature=0.7,
                 messages=[
                     {"role": "user", "content": prompt}
@@ -263,13 +263,16 @@ class LLMManager:
     async def _query_gpt4(self, prompt: str) -> str:
         """Query GPT-4 using OpenAI API."""
         try:
-            response = await self.openai_client.ChatCompletion.acreate(
+            from openai import AsyncOpenAI
+            client = AsyncOpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+            
+            response = await client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[
                     {"role": "system", "content": "You are an expert fantasy football analyst using ReAct methodology."},
                     {"role": "user", "content": prompt}
                 ],
-                max_tokens=1500,
+                max_tokens=2000,
                 temperature=0.7
             )
             return response.choices[0].message.content
